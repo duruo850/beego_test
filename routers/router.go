@@ -8,4 +8,5 @@ import (
 func init() {
 	web.Router("/", &controllers.MainController{})
 	web.Router("/add", &controllers.MainController{}, "Post:AddUser")
+	web.Router("/query", &controllers.MainController{}, "Post:QueryUser")
 }

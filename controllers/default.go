@@ -29,3 +29,12 @@ func (c *MainController) AddUser() {
 	c.Data["Password"] = addUser.Password
 	c.TplName = "query.html"
 }
+
+func (c *MainController) QueryUser() {
+	name := c.GetString("name")
+	usermsg, _ := models.GetUser(name)
+	c.Data["ID"] = usermsg.ID
+	c.Data["Name"] = usermsg.Name
+	c.Data["Password"] = usermsg.Password
+	c.TplName = "query.html"
+}
