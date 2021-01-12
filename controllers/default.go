@@ -11,4 +11,6 @@ type MainController struct {
 
 func (c *MainController) Get() {
 	fmt.Println("beego 欢迎你")
+	c.ViewPath = ""
+	c.TplName = "index.html"
 }
