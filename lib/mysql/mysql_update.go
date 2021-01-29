@@ -90,10 +90,6 @@ func loadScript() {
 
 	minVersion, maxVersion = findMinAndMax(versionLS)
 	fmt.Printf("minVersion %d, maxVersion: %d\n", minVersion, maxVersion)
-
-	for _, v := range scriptMap {
-		execScript(v)
-	}
 }
 
 func execScript(script string) {
@@ -110,7 +106,6 @@ func execScript(script string) {
 	b.WriteString(_db)
 	b.WriteString(" < ")
 	b.WriteString(script)
-	log.Printf("b.String():%s", b.String())
 	cmd := exec.Command("/bin/bash", "-c", b.String()) //不加第一个第二个参数会报错
 
 	stdout, _ := cmd.StdoutPipe() //创建输出管道
@@ -118,6 +113,6 @@ func execScript(script string) {
 	if err := cmd.Start(); err != nil {
 		log.Printf("error: %v\n", err)
 	} else {
-		log.Printf(" <db:%s> successful exec sql file = %s", _db, err)
+		log.Printf(" <db:%s> successful exec sql file = %s", _db, script)
 	}
 }
