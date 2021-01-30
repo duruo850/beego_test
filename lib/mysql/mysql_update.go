@@ -35,8 +35,6 @@ var dbVersionInitDataSql = "INSERT  INTO `db_version`(`db_version`) VALUES (0);"
 
 // 初始化数据库
 func init() {
-	_ = web.LoadAppConfig("ini", "conf/app.conf")
-
 	versionDBConn, _ = web.AppConfig.String("DBConn")
 	dbSettings := strings.Split(versionDBConn, "@")
 	dbUserSettings := strings.Split(dbSettings[0], ":")

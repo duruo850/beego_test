@@ -10,7 +10,6 @@ var utilDBConn string = ""
 var utilDB *sql.DB = nil
 
 func init() {
-	_ = web.LoadAppConfig("ini", "conf/app.conf")
 	utilDBConn, _ = web.AppConfig.String("DBConn")
 	utilDB = initDB(utilDBConn)
 }

@@ -11,7 +11,6 @@ var schemaDB *sql.DB
 
 // 初始化数据库
 func init() {
-	_ = web.LoadAppConfig("ini", "conf/app.conf")
 	dbconn, _ := web.AppConfig.String("DBConn")
 	_db := strings.Split(strings.Split(dbconn, "/")[1], "?")[0]
 	schemaDBConn := strings.Replace(dbconn, _db, "information_schema", -1)

@@ -19,7 +19,6 @@ type User struct {
 
 // 初始化数据库
 func init() {
-	_ = web.LoadAppConfig("ini", "conf/app.conf")
 	dbconn, _ := web.AppConfig.String("DBConn")
 	db, err := sql.Open("mysql", dbconn)
 	if err != nil {

@@ -12,7 +12,6 @@ func init() {
 }
 
 func consulRegister() {
-	_ = web.LoadAppConfig("ini", "conf/app.conf")
 	ConsulAddress, _ := web.AppConfig.String("ConsulAddress")
 	ServiceType, _ := web.AppConfig.String("ServiceType")
 	Port, _ := web.AppConfig.Int("Port")
