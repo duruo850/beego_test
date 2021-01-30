@@ -210,14 +210,14 @@ func Update() {
 
 	updateVersion := curDBVersion + 1
 	for {
+		if updateVersion > maxVersion {
+			break
+		}
 		err := updateToVersion(updateVersion)
 		if err != nil {
 			fmt.Printf("updateToVersion:%d failed!!!, err:%s\n", updateVersion, err)
 			os.Exit(1)
 		}
 		updateVersion++
-		if updateVersion > maxVersion {
-			break
-		}
 	}
 }
