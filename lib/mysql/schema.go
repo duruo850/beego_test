@@ -26,20 +26,20 @@ func init() {
 	schemaDB = db
 }
 
-func IsDbExist(db_name string) (bool, error) {
+func IsDbExist(dbName string) (bool, error) {
 	qsql := "SELECT SCHEMA_NAME FROM SCHEMATA where SCHEMA_NAME = ?"
-	var schemaName string = ""
+	var schemaName = ""
 	stmt, err := schemaDB.Prepare(qsql)
-	defer stmt.Close()
 	if err != nil {
 		return false, err
 	}
+	defer func() { _ = stmt.Close() }()
 
-	rows, err := stmt.Query(db_name)
-	defer rows.Close()
+	rows, err := stmt.Query(dbName)
 	if err != nil {
 		return false, err
 	}
+	defer func() { _ = rows.Close() }()
 	//遍历
 	for rows.Next() {
 		err = rows.Scan(&schemaName)
@@ -53,10 +53,11 @@ func IsDbExist(db_name string) (bool, error) {
 func CreateDB(dbName string) (bool, error) {
 	qsql := "create database if not exists " + dbName + " CHARACTER SET utf8 "
 	stmt, err := schemaDB.Prepare(qsql)
-	defer stmt.Close()
+
 	if err != nil {
 		return false, err
 	} else {
+		defer func() { _ = stmt.Close() }()
 		_, err := stmt.Exec()
 		if err == nil {
 			return true, nil

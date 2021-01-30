@@ -119,10 +119,10 @@ func getCurVersion() (int, error) {
 		return 0, err
 	}
 	rows, err := stmt.Query()
-	defer rows.Close()
 	if err != nil {
 		return 0, err
 	}
+	defer func() { _ = rows.Close() }()
 	curVersion := 0
 	//遍历
 	for rows.Next() {
@@ -142,7 +142,7 @@ func setCurVersion(version int) error {
 	if err != nil {
 		return err
 	}
-	defer stmt.Close()
+	defer func() { _ = stmt.Close() }()
 	_, err = stmt.Exec(version)
 	if err != nil {
 		return err
