@@ -16,17 +16,16 @@ import (
 	"strings"
 )
 
-var versionDBConn string = ""
+var versionDBConn = ""
 var versionDB *sql.DB
-var curDBVersion int = 0
-var minVersion int = 0
-var maxVersion int = 0
-var scriptMap map[int]string = make(map[int]string)
-var _host string = ""
-var _port string = ""
-var _user string = ""
-var _password string = ""
-var _db string = ""
+var curDBVersion = 0
+var maxVersion = 0
+var scriptMap = make(map[int]string)
+var _host = ""
+var _port = ""
+var _user = ""
+var _password = ""
+var _db = ""
 
 // DB_VERSION表格结构脚本
 var dbVersionCreateTableSql = "CREATE TABLE `db_version` (`db_version` INT(11) NOT NULL DEFAULT '1' COMMENT '数据库版本') ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;"
@@ -60,6 +59,116 @@ func ensureVersionDB() {
 	}
 }
 
+func loadScript() {
+	curWD, _ := os.Getwd()
+
+	// 加载脚本
+	versionDir := curWD + "/db/mysql_update/version"
+	mysqlScripts, _ := ioutil.ReadDir(versionDir)
+	var versionLS []int
+
+	for _, mysqlFile := range mysqlScripts {
+		arr := strings.Split(mysqlFile.Name(), ".")
+		version, _ := strconv.Atoi(arr[0])
+		ftype := arr[1]
+		if ftype != "sql" {
+			continue
+		}
+		versionLS = append(versionLS, version)
+		scriptMap[version] = versionDir + "/" + mysqlFile.Name()
+	}
+
+	_, maxVersion = lib.FindMinMax(versionLS)
+}
+
+// 执行sql脚本
+func execScript(script string) error {
+	var b bytes.Buffer
+	b.WriteString("mysql -h ")
+	b.WriteString(_host)
+	b.WriteString(" -P")
+	b.WriteString(_port)
+	b.WriteString(" -u")
+	b.WriteString(_user)
+	b.WriteString(" -p")
+	b.WriteString(_password)
+	b.WriteString(" ")
+	b.WriteString(_db)
+	b.WriteString(" < ")
+	b.WriteString(script)
+
+	//不加第一个第二个参数会报错
+	cmd := exec.Command("/bin/bash", "-c", b.String())
+	w := bytes.NewBuffer(nil)
+	cmd.Stderr = w
+	if err := cmd.Run(); err != nil {
+		log.Printf("<db:%s> failed exec sql file:%s error: %s\n", _db, script, w)
+		return err
+	} else {
+		log.Printf(" <db:%s> successful exec sql file = %s", _db, script)
+	}
+	return nil
+}
+
+// 查询当前版本
+func getCurVersion() (int, error) {
+	ensureVersionDB()
+	qsql := "select db_version from db_version"
+	stmt, err := versionDB.Prepare(qsql)
+	if err != nil {
+		return 0, err
+	}
+	rows, err := stmt.Query()
+	defer rows.Close()
+	if err != nil {
+		return 0, err
+	}
+	curVersion := 0
+	//遍历
+	for rows.Next() {
+		err = rows.Scan(&curVersion)
+		if err != nil {
+			return 0, err
+		}
+	}
+	return curVersion, nil
+}
+
+// 设置当前版本
+func setCurVersion(version int) error {
+	ensureVersionDB()
+	qsql := "update db_version set db_version = ?"
+	stmt, err := versionDB.Prepare(qsql)
+	if err != nil {
+		return err
+	}
+	defer stmt.Close()
+	_, err = stmt.Exec(version)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// 设置当前版本
+func updateToVersion(version int) error {
+	ensureVersionDB()
+	toExecScript := scriptMap[version]
+	err := execScript(toExecScript)
+	if err != nil {
+		fmt.Printf("execScript:%s failed!!!, err:%s\n", toExecScript, err)
+		os.Exit(1)
+		return err
+	}
+
+	err = setCurVersion(version)
+	if err != nil {
+		fmt.Printf("setCurVersion:%d failed!!!, err:%s\n", version, err)
+		os.Exit(1)
+	}
+	return nil
+}
+
 func Update() {
 	isExist, err := IsDbExist(_db)
 	if err != nil {
@@ -88,91 +197,27 @@ func Update() {
 			fmt.Printf("ExecSql: %s success!!!\n", dbVersionInitDataSql)
 		}
 	}
-}
 
-func loadScript() {
-	curWD, _ := os.Getwd()
+	curDBVersion, err = getCurVersion()
+	if err != nil {
+		fmt.Printf("getCurVersion: failed!!!, err:%s\n", err)
+		os.Exit(1)
+	}
+	if curDBVersion > maxVersion {
+		fmt.Printf("curDBVersion:%d bigger than: maxVersion:%d\n", curDBVersion, maxVersion)
+		os.Exit(1)
+	}
 
-	// 加载脚本
-	versionDir := curWD + "/db/mysql_update/version"
-	mysqlScripts, _ := ioutil.ReadDir(versionDir)
-	var versionLS []int
-
-	for _, mysqlFile := range mysqlScripts {
-		arr := strings.Split(mysqlFile.Name(), ".")
-		version, _ := strconv.Atoi(arr[0])
-		ftype := arr[1]
-		if ftype != "sql" {
-			continue
+	updateVersion := curDBVersion + 1
+	for {
+		err := updateToVersion(updateVersion)
+		if err != nil {
+			fmt.Printf("updateToVersion:%d failed!!!, err:%s\n", updateVersion, err)
+			os.Exit(1)
 		}
-		versionLS = append(versionLS, version)
-		scriptMap[version] = versionDir + "/" + mysqlFile.Name()
-	}
-
-	minVersion, maxVersion = lib.FindMinMax(versionLS)
-}
-
-// 执行sql脚本
-func execScript(script string) {
-	var b bytes.Buffer
-	b.WriteString("mysql -h ")
-	b.WriteString(_host)
-	b.WriteString(" -P")
-	b.WriteString(_port)
-	b.WriteString(" -u")
-	b.WriteString(_user)
-	b.WriteString(" -p")
-	b.WriteString(_password)
-	b.WriteString(" ")
-	b.WriteString(_db)
-	b.WriteString(" < ")
-	b.WriteString(script)
-	cmd := exec.Command("/bin/bash", "-c", b.String()) //不加第一个第二个参数会报错
-
-	stdout, _ := cmd.StdoutPipe() //创建输出管道
-	defer stdout.Close()
-	if err := cmd.Start(); err != nil {
-		log.Printf("error: %v\n", err)
-	} else {
-		log.Printf(" <db:%s> successful exec sql file = %s", _db, script)
+		updateVersion++
+		if updateVersion > maxVersion {
+			break
+		}
 	}
 }
-
-// 执行sql脚本
-//func get_cur_db_version(script string) {
-//	qsql := "select db_version from db_version"
-//	if userDB == nil {
-//			return response, errors.New("connect mysql failed")
-//		}
-//	stmt, _ := userDB.Prepare(qsql)
-//	rows, err := stmt.Query(name)
-//	defer rows.Close()
-//	if err != nil {
-//		return response, err
-//	}
-//	//遍历
-//	for rows.Next() {
-//		rows
-//		err = rows.Scan(&response.ID, &response.Name, &response.Password)
-//		if err != nil {
-//			return response, err
-//		}
-//	}
-//	return response, nil
-//}
-
-//@property
-//def cur_db_version(self):
-//"""
-//获得数据库版本
-//"""
-//if self.__db_version is not None:
-//return self.__db_version
-//
-//sql_cmd = 'select db_version from db_version'
-//ret = self.__mysql_clt.query(sql_cmd)
-//if not ret.success:
-//# 初始版本是0
-//return 0
-//self.__db_version = ret.first()['db_version']
-//return self.__db_version
