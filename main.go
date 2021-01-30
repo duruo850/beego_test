@@ -13,5 +13,7 @@ func main() {
 
 	dir, _ := os.Getwd()
 	web.SetViewsPath(dir + "/views2/")
-	web.Run(":8080")
+
+	port, _ := web.AppConfig.String("Port")
+	web.Run(":" + port)
 }
