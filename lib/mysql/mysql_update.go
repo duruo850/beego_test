@@ -26,9 +26,15 @@ var _user string = ""
 var _password string = ""
 var _db string = ""
 
+// DB_VERSION表格结构脚本
+var dbVersionCreateTableSql = "CREATE TABLE `db_version` (`db_version` INT(11) NOT NULL DEFAULT '1' COMMENT '数据库版本') ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;"
+
+// DB_VERSION表格初始数据脚本
+var dbVersionInitDataSql = "INSERT  INTO `db_version`(`db_version`) VALUES (0);"
+
 // 初始化数据库
 func init() {
-	_ = web.LoadAppConfig("ini", "conf/app2.conf")
+	_ = web.LoadAppConfig("ini", "conf/app.conf")
 
 	dbconn, _ := web.AppConfig.String("DBConn")
 	// DBConn="root:123456@tcp(localhost:3306)/user?charset=utf8"
@@ -50,7 +56,38 @@ func init() {
 	_ = db.Ping()
 	versionDB = db
 
+	// 加载脚本
 	loadScript()
+}
+
+func Update() {
+	isExist, err := IsDbExist(_db)
+	if err != nil {
+		fmt.Printf("IsDbExist db %s failed!!!", _db)
+	}
+	if isExist == false {
+		_, err = CreateDB(_db)
+		if err != nil {
+			fmt.Printf("CreateDB: db %s failed!!!, err: %s\n", _db, err)
+			os.Exit(1)
+		} else {
+			fmt.Printf("CreateDB: db %s success!!!\n", _db)
+		}
+		_, err = ExecSql(dbVersionCreateTableSql)
+		if err != nil {
+			fmt.Printf("ExecSql: %s failed!!!, err:%s\n", dbVersionCreateTableSql, err)
+			os.Exit(1)
+		} else {
+			fmt.Printf("ExecSql: %s success!!!\n", dbVersionCreateTableSql)
+		}
+		_, err = ExecSql(dbVersionInitDataSql)
+		if err != nil {
+			fmt.Printf("ExecSql: %s failed!!!, err:%s\n", dbVersionInitDataSql, err)
+			os.Exit(1)
+		} else {
+			fmt.Printf("ExecSql: %s success!!!\n", dbVersionInitDataSql)
+		}
+	}
 }
 
 func findMinAndMax(a []int) (min int, max int) {
@@ -84,12 +121,9 @@ func loadScript() {
 		}
 		versionLS = append(versionLS, version)
 		scriptMap[version] = versionDir + "/" + mysqlFile.Name()
-
-		fmt.Println(mysqlFile.Name())
 	}
 
 	minVersion, maxVersion = findMinAndMax(versionLS)
-	fmt.Printf("minVersion %d, maxVersion: %d\n", minVersion, maxVersion)
 }
 
 func execScript(script string) {

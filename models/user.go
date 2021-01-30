@@ -19,7 +19,7 @@ type User struct {
 
 // 初始化数据库
 func init() {
-	_ = web.LoadAppConfig("ini", "conf/app2.conf")
+	_ = web.LoadAppConfig("ini", "conf/app.conf")
 	dbconn, _ := web.AppConfig.String("DBConn")
 	db, err := sql.Open("mysql", dbconn)
 	if err != nil {
@@ -29,13 +29,6 @@ func init() {
 	db.SetMaxIdleConns(0)
 	_ = db.Ping()
 	userDB = db
-}
-
-func Close() {
-	if userDB != nil {
-		_ = userDB.Close()
-	}
-
 }
 
 func AddUser(rec User) (User, error) {
