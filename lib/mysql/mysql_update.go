@@ -16,6 +16,7 @@ import (
 	"strings"
 )
 
+var versionDBConn string = ""
 var versionDB *sql.DB
 var curDBVersion int = 0
 var minVersion int = 0
@@ -37,42 +38,40 @@ var dbVersionInitDataSql = "INSERT  INTO `db_version`(`db_version`) VALUES (0);"
 func init() {
 	_ = web.LoadAppConfig("ini", "conf/app.conf")
 
-	dbconn, _ := web.AppConfig.String("DBConn")
-	// DBConn="root:123456@tcp(localhost:3306)/user?charset=utf8"
-	dbSettings := strings.Split(dbconn, "@")
+	versionDBConn, _ = web.AppConfig.String("DBConn")
+	dbSettings := strings.Split(versionDBConn, "@")
 	dbUserSettings := strings.Split(dbSettings[0], ":")
 	dbHostSettings := strings.Split(strings.Split(strings.Split(dbSettings[1], "(")[1], ")")[0], ":")
 	_host = dbHostSettings[0]
 	_port = dbHostSettings[1]
 	_user = dbUserSettings[0]
 	_password = dbUserSettings[1]
-	_db = strings.Split(strings.Split(dbconn, "/")[1], "?")[0]
+	_db = strings.Split(strings.Split(versionDBConn, "/")[1], "?")[0]
 
-	db, err := sql.Open("mysql", dbconn)
-	if err != nil {
-		return
-	}
-	db.SetMaxOpenConns(2000)
-	db.SetMaxIdleConns(0)
-	_ = db.Ping()
-	versionDB = db
+	ensureVersionDB()
 
 	// 加载脚本
 	loadScript()
 }
 
+func ensureVersionDB() {
+	if versionDB == nil {
+		versionDB = initDB(versionDBConn)
+	}
+}
+
 func Update() {
 	isExist, err := IsDbExist(_db)
 	if err != nil {
-		fmt.Printf("IsDbExist db %s failed!!!", _db)
+		fmt.Printf("IsDbExist: %s failed!!!", _db)
 	}
 	if isExist == false {
 		_, err = CreateDB(_db)
 		if err != nil {
-			fmt.Printf("CreateDB: db %s failed!!!, err: %s\n", _db, err)
+			fmt.Printf("CreateDB: %s failed!!!, err: %s\n", _db, err)
 			os.Exit(1)
 		} else {
-			fmt.Printf("CreateDB: db %s success!!!\n", _db)
+			fmt.Printf("CreateDB: %s success!!!\n", _db)
 		}
 		_, err = ExecSql(dbVersionCreateTableSql)
 		if err != nil {
@@ -113,6 +112,7 @@ func loadScript() {
 	minVersion, maxVersion = lib.FindMinMax(versionLS)
 }
 
+// 执行sql脚本
 func execScript(script string) {
 	var b bytes.Buffer
 	b.WriteString("mysql -h ")
@@ -137,3 +137,42 @@ func execScript(script string) {
 		log.Printf(" <db:%s> successful exec sql file = %s", _db, script)
 	}
 }
+
+// 执行sql脚本
+//func get_cur_db_version(script string) {
+//	qsql := "select db_version from db_version"
+//	if userDB == nil {
+//			return response, errors.New("connect mysql failed")
+//		}
+//	stmt, _ := userDB.Prepare(qsql)
+//	rows, err := stmt.Query(name)
+//	defer rows.Close()
+//	if err != nil {
+//		return response, err
+//	}
+//	//遍历
+//	for rows.Next() {
+//		rows
+//		err = rows.Scan(&response.ID, &response.Name, &response.Password)
+//		if err != nil {
+//			return response, err
+//		}
+//	}
+//	return response, nil
+//}
+
+//@property
+//def cur_db_version(self):
+//"""
+//获得数据库版本
+//"""
+//if self.__db_version is not None:
+//return self.__db_version
+//
+//sql_cmd = 'select db_version from db_version'
+//ret = self.__mysql_clt.query(sql_cmd)
+//if not ret.success:
+//# 初始版本是0
+//return 0
+//self.__db_version = ret.first()['db_version']
+//return self.__db_version
