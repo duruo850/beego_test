@@ -28,7 +28,7 @@ var _password = ""
 var _db = ""
 
 // DB_VERSION表格结构脚本
-var dbVersionCreateTableSql = "CREATE TABLE `db_version` (`db_version` INT(11) NOT NULL DEFAULT '1' COMMENT '数据库版本') ENGINE=INNODB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;"
+var dbVersionCreateTableSql = "CREATE TABLE `db_version` (`db_version` INT(11) NOT NULL DEFAULT '1' COMMENT '数据库版本') ENGINE=INNODB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 
 // DB_VERSION表格初始数据脚本
 var dbVersionInitDataSql = "INSERT  INTO `db_version`(`db_version`) VALUES (0);"

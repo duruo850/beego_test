@@ -51,7 +51,7 @@ func IsDbExist(dbName string) (bool, error) {
 }
 
 func CreateDB(dbName string) (bool, error) {
-	qsql := "create database if not exists " + dbName + " CHARACTER SET utf8 "
+	qsql := "create database if not exists " + dbName + "  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
 	stmt, err := schemaDB.Prepare(qsql)
 
 	if err != nil {

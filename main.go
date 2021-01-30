@@ -2,7 +2,6 @@ package main
 
 import (
 	"beego_test/lib/mysql"
-	_ "beego_test/lib/mysql"
 	_ "beego_test/routers"
 	"github.com/beego/beego/v2/server/web"
 	"os"
