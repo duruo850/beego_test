@@ -1,4 +1,4 @@
-FROM docker.io/golang:1.15.6
+FROM duruo850/golang:1.15.6
 
 MAINTAINER Jay <zhanchenjin.2008@163.com>
 
