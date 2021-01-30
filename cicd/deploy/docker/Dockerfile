@@ -9,4 +9,4 @@ WORKDIR /var/app/beego_test
 
 RUN bash cicd/depend/depend.sh
 
-ENTRYPOINT ["go", "run", "beego_test"]
+CMD ["./beego_test"]
