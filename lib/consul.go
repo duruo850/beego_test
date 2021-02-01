@@ -35,7 +35,7 @@ func consulRegister() {
 
 	// 增加consul健康检查回调函数
 	check := new(consulapi.AgentServiceCheck)
-	check.HTTP = fmt.Sprintf("http://%s:%d", registration.Address, registration.Port)
+	check.HTTP = fmt.Sprintf("http://%s:%d/consul", registration.Address, registration.Port)
 	check.Timeout = "5s"
 	check.Interval = "5s"
 	check.DeregisterCriticalServiceAfter = "300s" // 故障检查失败30s后 consul自动将注册服务删除
